@@ -4,6 +4,8 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
+	"google.golang.org/grpc"
+	"net"
 )
 
 // init registers this plugin.
@@ -18,6 +20,19 @@ func setup(c *caddy.Controller) error {
 		// Any errors returned from this setup function should be wrapped with plugin.Error, so we
 		// can present a slightly nicer error message to the user.
 		return plugin.Error("hotupdate", c.ArgErr())
+	}
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	s := grpc.NewServer()
+	RegisterDNSUpdaterServer(s, &server{})
+	log.Infof("server listening at %v", lis.Addr())
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 
 	re := New()
