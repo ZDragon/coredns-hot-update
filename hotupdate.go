@@ -5,59 +5,110 @@ package hotupdate
 
 import (
 	"context"
-
 	"github.com/coredns/coredns/plugin"
-	"github.com/coredns/coredns/plugin/metrics"
-	clog "github.com/coredns/coredns/plugin/pkg/log"
+	"strings"
 
+	//"github.com/coredns/coredns/plugin/metrics"
+	clog "github.com/coredns/coredns/plugin/pkg/log"
+	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+)
+
+const (
+	port = ":50051"
 )
 
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
 var log = clog.NewWithPlugin("hotupdate")
 
+// server is used to implement helloworld.GreeterServer.
+type server struct {
+	UnimplementedDNSUpdaterServer
+	ctx *HotUpdate
+}
+
 // HotUpdate Example is an example plugin to show how to write a plugin.
 type HotUpdate struct {
-	Next plugin.Handler
+	Next    plugin.Handler
+	origins []string // for easy matching, these strings are the index in the map m.
+	m       map[string][]dns.RR
 }
 
 // ServeDNS implements the plugin.Handler interface. This method gets called when example is used
 // in a Server.
-func (e HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
-	// This function could be simpler. I.e. just fmt.Println("example") here, but we want to show
-	// a slightly more complex example as to make this more interesting.
-	// Here we wrap the dns.ResponseWriter in a new ResponseWriter and call the next plugin, when the
-	// answer comes back, it will print "example".
+func (re HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	state := request.Request{W: w, Req: r}
+	qname := state.Name()
+	zone := plugin.Zones(re.origins).Matches(qname)
+	if zone == "" {
+		return plugin.NextOrFailure(re.Name(), re.Next, ctx, w, r)
+	}
 
-	// Debug log that we've have seen the query. This will only be shown when the debug plugin is loaded.
-	log.Debug("Received response")
+	// New we should have some data for this zone, as we just have a list of RR, iterate through them, find the qname
+	// and see if the qtype exists. If so reply, if not do the normal DNS thing and return either NXDOMAIN or NODATA.
+	m := new(dns.Msg)
+	m.SetReply(r)
+	m.Authoritative = true
 
-	// Wrap.
-	pw := NewResponsePrinter(w)
+	nxdomain := true
+	var soa dns.RR
+	for _, r := range re.m[zone] {
+		if r.Header().Rrtype == dns.TypeSOA && soa == nil {
+			soa = r
+		}
+		if r.Header().Name == qname {
+			nxdomain = false
+			if r.Header().Rrtype == state.QType() {
+				m.Answer = append(m.Answer, r)
+			}
+		}
+	}
 
-	// Export metric with the server label set to the current server handling the request.
-	requestCount.WithLabelValues(metrics.WithServer(ctx)).Inc()
+	// handle NXDOMAIN, NODATA and normal response here.
+	if nxdomain {
+		m.Rcode = dns.RcodeNameError
+		if soa != nil {
+			m.Ns = []dns.RR{soa}
+		}
+		w.WriteMsg(m)
+		return dns.RcodeSuccess, nil
+	}
 
-	// Call next plugin (if any).
-	return plugin.NextOrFailure(e.Name(), e.Next, ctx, pw, r)
+	if len(m.Answer) == 0 {
+		if soa != nil {
+			m.Ns = []dns.RR{soa}
+		}
+	}
+
+	w.WriteMsg(m)
+	return dns.RcodeSuccess, nil
 }
 
 // Name implements the Handler interface.
 func (e HotUpdate) Name() string { return "hotupdate" }
 
-// ResponsePrinter wrap a dns.ResponseWriter and will write example to standard output when WriteMsg is called.
-type ResponsePrinter struct {
-	dns.ResponseWriter
+// New returns a pointer to a new and intialized Records.
+func New() *HotUpdate {
+	re := new(HotUpdate)
+	re.m = make(map[string][]dns.RR)
+	return re
 }
 
-// NewResponsePrinter returns ResponseWriter.
-func NewResponsePrinter(w dns.ResponseWriter) *ResponsePrinter {
-	return &ResponsePrinter{ResponseWriter: w}
-}
+func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, error) {
+	log.Infof("Received: %v %v", in.Host, in.Ip)
+	qname := plugin.Host(in.Host).Normalize()
+	origins := s.ctx.origins
+	zone := plugin.Zones(origins).Matches(qname)
+	if zone == "" {
+		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
+		if err != nil {
+			return nil, err
+		}
+		rr.Header().Name = strings.ToLower(rr.Header().Name)
+		s.ctx.origins = append(origins, qname)
+		s.ctx.m[qname] = append(s.ctx.m[qname], rr)
+	}
 
-// WriteMsg calls the underlying ResponseWriter's WriteMsg method and prints "example" to standard output.
-func (r *ResponsePrinter) WriteMsg(res *dns.Msg) error {
-	log.Info("hotupdate")
-	return r.ResponseWriter.WriteMsg(res)
+	return &ResponseStatus{Message: "Received " + in.Host + " IP " + in.Ip, Status: true}, nil
 }

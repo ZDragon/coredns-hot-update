@@ -20,9 +20,12 @@ func setup(c *caddy.Controller) error {
 		return plugin.Error("hotupdate", c.ArgErr())
 	}
 
+	re := New()
+
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		return HotUpdate{Next: next}
+		re.Next = next
+		return re
 	})
 
 	// All OK, return a nil error.

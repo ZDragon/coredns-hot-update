@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option go_package = "github.com/ZDragon/coredns-hot-update;hotupdate";
+
+package hotupdate;
+
+
+service DNSUpdater {
+  rpc add(RequestDNSAdd) returns (ResponseStatus) {}
+  rpc remove(RequestDNSRemove) returns (ResponseStatus) {}
+}
+
+message RequestDNSAdd {
+  string host = 1;
+  string ip = 2;
+}
+
+message RequestDNSRemove {
+  string host = 1;
+  string ip = 2;
+}
+
+message ResponseStatus {
+  bool status = 1;
+  string message = 2;
+}
