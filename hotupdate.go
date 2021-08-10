@@ -40,7 +40,9 @@ type HotUpdate struct {
 func (re HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
 	qname := state.Name()
+	log.Infof("ServeDNS qname: %v", qname)
 	zone := plugin.Zones(re.origins).Matches(qname)
+	log.Infof("ServeDNS zone: %v", zone)
 	if zone == "" {
 		return plugin.NextOrFailure(re.Name(), re.Next, ctx, w, r)
 	}
@@ -86,7 +88,7 @@ func (re HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 // Name implements the Handler interface.
-func (e HotUpdate) Name() string { return "hotupdate" }
+func (re HotUpdate) Name() string { return "hotupdate" }
 
 // New returns a pointer to a new and intialized Records.
 func New() *HotUpdate {
