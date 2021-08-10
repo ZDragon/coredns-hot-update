@@ -37,7 +37,7 @@ type HotUpdate struct {
 
 // ServeDNS implements the plugin.Handler interface. This method gets called when example is used
 // in a Server.
-func (re HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
 	qname := state.Name()
 	log.Infof("ServeDNS qname: %v", qname)
@@ -88,7 +88,7 @@ func (re HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 // Name implements the Handler interface.
-func (re HotUpdate) Name() string { return "hotupdate" }
+func (re *HotUpdate) Name() string { return "hotupdate" }
 
 // New returns a pointer to a new and intialized Records.
 func New() *HotUpdate {
