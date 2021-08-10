@@ -24,6 +24,12 @@ func setup(c *caddy.Controller) error {
 
 	re := New()
 
+	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
+	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
+		re.Next = next
+		return re
+	})
+
 	go func() {
 		lis, err := net.Listen("tcp", port)
 		if err != nil {
@@ -39,12 +45,6 @@ func setup(c *caddy.Controller) error {
 			log.Fatalf("failed to serve: %v", err1)
 		}
 	}()
-
-	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
-	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		re.Next = next
-		return re
-	})
 
 	// All OK, return a nil error.
 	return nil
