@@ -91,6 +91,7 @@ func (e HotUpdate) Name() string { return "hotupdate" }
 // New returns a pointer to a new and intialized Records.
 func New() *HotUpdate {
 	re := new(HotUpdate)
+	re.origins = make([]string, 1)
 	re.m = make(map[string][]dns.RR)
 	return re
 }
@@ -98,15 +99,15 @@ func New() *HotUpdate {
 func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, error) {
 	log.Infof("Received: %v %v", in.Host, in.Ip)
 	qname := plugin.Host(in.Host).Normalize()
-	origins := s.ctx.origins
-	zone := plugin.Zones(origins).Matches(qname)
+	log.Infof("Origins len: %v", len(s.ctx.origins))
+	zone := plugin.Zones(s.ctx.origins).Matches(qname)
 	if zone == "" {
 		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
 		if err != nil {
 			return nil, err
 		}
 		rr.Header().Name = strings.ToLower(rr.Header().Name)
-		s.ctx.origins = append(origins, qname)
+		s.ctx.origins = append(s.ctx.origins, qname)
 		s.ctx.m[qname] = append(s.ctx.m[qname], rr)
 	}
 
