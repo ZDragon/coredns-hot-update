@@ -33,9 +33,12 @@ func setup(c *caddy.Controller) error {
 	RegisterDNSUpdaterServer(s, &server{ctx: re})
 	log.Infof("server listening at %v", lis.Addr())
 
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	go func() {
+		err := s.Serve(lis)
+		if err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
 
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
