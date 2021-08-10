@@ -59,6 +59,7 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 		if r.Header().Rrtype == dns.TypeSOA && soa == nil {
 			soa = r
 		}
+		log.Infof("r %v", r)
 		if r.Header().Name == qname {
 			nxdomain = false
 			if r.Header().Rrtype == state.QType() {
