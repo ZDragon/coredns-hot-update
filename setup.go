@@ -22,20 +22,20 @@ func setup(c *caddy.Controller) error {
 		return plugin.Error("hotupdate", c.ArgErr())
 	}
 
+	re := New()
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
 	s := grpc.NewServer()
-	RegisterDNSUpdaterServer(s, &server{})
+	RegisterDNSUpdaterServer(s, &server{ctx: re})
 	log.Infof("server listening at %v", lis.Addr())
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
-	re := New()
 
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
