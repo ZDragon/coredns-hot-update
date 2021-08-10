@@ -24,19 +24,19 @@ func setup(c *caddy.Controller) error {
 
 	re := New()
 
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	s := grpc.NewServer()
-	RegisterDNSUpdaterServer(s, &server{ctx: re})
-	log.Infof("server listening at %v", lis.Addr())
-
 	go func() {
-		err := s.Serve(lis)
+		lis, err := net.Listen("tcp", port)
 		if err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			log.Fatalf("failed to listen: %v", err)
+		}
+
+		s := grpc.NewServer()
+		RegisterDNSUpdaterServer(s, &server{ctx: re})
+		log.Infof("server listening at %v", lis.Addr())
+
+		err1 := s.Serve(lis)
+		if err1 != nil {
+			log.Fatalf("failed to serve: %v", err1)
 		}
 	}()
 
