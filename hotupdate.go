@@ -46,7 +46,7 @@ func (re *HotUpdate) Name() string { return "hotupdate" }
 // New returns a pointer to a new and intialized Records.
 func New() *HotUpdate {
 	re := new(HotUpdate)
-	re.file = file.File{Zones: file.Zones{}}
+	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 	return re
 }
 
