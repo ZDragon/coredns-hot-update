@@ -83,5 +83,12 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 		s.ctx.file.Zones.Z["."] = z
 	}
 
+	for s2, z := range s.ctx.file.Zones.Z {
+		log.Infof("Zone %v", s2)
+		for _, i2 := range z.All() {
+			log.Infof("RR records %v", i2.All())
+		}
+	}
+
 	return &ResponseStatus{Message: "Received " + in.Host + " IP " + in.Ip, Status: true}, nil
 }
