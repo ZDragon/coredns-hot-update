@@ -56,6 +56,7 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 	log.Infof("Origins len: %v", len(s.ctx.file.Zones.Names))
 	zone := plugin.Zones(s.ctx.file.Zones.Names).Matches(qname)
 	if zone == "" {
+		log.Infof("Zone %v empty, try add qname %v", zone, qname)
 		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
 		if err != nil {
 			return nil, err
@@ -69,6 +70,7 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 		s.ctx.file.Zones.Z[qname] = z
 		s.ctx.file.Zones.Names = append(s.ctx.file.Zones.Names, qname)
 	} else {
+		log.Infof("Zone %v found, try add qname %v", zone, qname)
 		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
 		if err != nil {
 			return nil, err
