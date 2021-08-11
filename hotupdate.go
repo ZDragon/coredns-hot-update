@@ -62,11 +62,11 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 			return nil, err
 		}
 		rr.Header().Name = strings.ToLower(rr.Header().Name)
-		z := file.NewZone(qname, "")
+		z := file.NewZone(".", "")
 		if err := z.Insert(rr); err != nil {
 			return nil, err
 		}
-
+		log.Infof("Log rr: %v", rr)
 		s.ctx.file.Zones.Z["."] = z
 		s.ctx.file.Zones.Names = append(s.ctx.file.Zones.Names, ".")
 	} else {
@@ -80,6 +80,7 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 		if err := z.Insert(rr); err != nil {
 			return nil, err
 		}
+		log.Infof("Log rr: %v", rr)
 		s.ctx.file.Zones.Z["."] = z
 	}
 
