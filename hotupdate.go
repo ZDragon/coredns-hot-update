@@ -67,8 +67,8 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 			return nil, err
 		}
 
-		s.ctx.file.Zones.Z[zone] = z
-		s.ctx.file.Zones.Names = append(s.ctx.file.Zones.Names, zone)
+		s.ctx.file.Zones.Z["."] = z
+		s.ctx.file.Zones.Names = append(s.ctx.file.Zones.Names, ".")
 	} else {
 		log.Infof("Zone %v found, try add qname %v", zone, qname)
 		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
@@ -76,11 +76,11 @@ func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, e
 			return nil, err
 		}
 		rr.Header().Name = strings.ToLower(rr.Header().Name)
-		z := s.ctx.file.Zones.Z[zone]
+		z := s.ctx.file.Zones.Z["."]
 		if err := z.Insert(rr); err != nil {
 			return nil, err
 		}
-		s.ctx.file.Zones.Z[zone] = z
+		s.ctx.file.Zones.Z["."] = z
 	}
 
 	return &ResponseStatus{Message: "Received " + in.Host + " IP " + in.Ip, Status: true}, nil
