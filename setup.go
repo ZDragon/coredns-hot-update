@@ -9,7 +9,6 @@ import (
 	"github.com/coredns/coredns/plugin"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
-	"os"
 	"time"
 )
 
@@ -63,11 +62,4 @@ func setup(c *caddy.Controller) error {
 
 	// All OK, return a nil error.
 	return nil
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }
