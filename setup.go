@@ -56,6 +56,7 @@ func setup(c *caddy.Controller) error {
 			klog.Fatalf("Error running controller: %s", err.Error())
 		}
 
+		klog.Info("KubeAPI Controller started")
 	}()
 
 	// Add the Plugin to CoreDNS, so Servers can use it in their plugin chain.
