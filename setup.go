@@ -1,11 +1,16 @@
 package hotupdate
 
 import (
+	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
+	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions"
+	"github.com/ZDragon/coredns-hot-update/pkg/signals"
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"google.golang.org/grpc"
-	"net"
+	"k8s.io/client-go/rest"
+	"k8s.io/klog"
+	"os"
+	"time"
 )
 
 // init registers this plugin.
@@ -30,22 +35,39 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	go func() {
-		lis, err := net.Listen("tcp", port)
-		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
-		}
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
 
-		s := grpc.NewServer()
-		RegisterDNSUpdaterServer(s, &server{ctx: re})
-		log.Infof("server listening at %v", lis.Addr())
+	// set up signals so we handle the first shutdown signal gracefully
+	stopCh := signals.SetupSignalHandler()
 
-		err1 := s.Serve(lis)
-		if err1 != nil {
-			log.Fatalf("failed to serve: %v", err1)
-		}
-	}()
+	exampleClient, err := clientset.NewForConfig(config)
+	if err != nil {
+		klog.Fatalf("Error building example clientset: %s", err.Error())
+	}
+
+	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
+
+	controller := NewController(exampleClient,
+		exampleInformerFactory.Networking().V1().FederationDNSs())
+
+	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
+	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
+	exampleInformerFactory.Start(stopCh)
+
+	if err = controller.Run(2, stopCh); err != nil {
+		klog.Fatalf("Error running controller: %s", err.Error())
+	}
 
 	// All OK, return a nil error.
 	return nil
+}
+
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }

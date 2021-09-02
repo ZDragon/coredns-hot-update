@@ -7,8 +7,6 @@ import (
 	"context"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
-	"strings"
-
 	//"github.com/coredns/coredns/plugin/metrics"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/miekg/dns"
@@ -24,7 +22,6 @@ var log = clog.NewWithPlugin("hotupdate")
 
 // server is used to implement helloworld.GreeterServer.
 type server struct {
-	UnimplementedDNSUpdaterServer
 	ctx *HotUpdate
 }
 
@@ -48,48 +45,4 @@ func New() *HotUpdate {
 	re := new(HotUpdate)
 	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 	return re
-}
-
-func (s *server) Add(ctx context.Context, in *RequestDNSAdd) (*ResponseStatus, error) {
-	log.Infof("Received: %v %v", in.Host, in.Ip)
-	qname := plugin.Host(in.Host).Normalize()
-	log.Infof("Origins len: %v", len(s.ctx.file.Zones.Names))
-	zone := plugin.Zones(s.ctx.file.Zones.Names).Matches(qname)
-	if zone == "" {
-		log.Infof("Zone %v empty, try add qname %v", zone, qname)
-		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
-		if err != nil {
-			return nil, err
-		}
-		rr.Header().Name = strings.ToLower(rr.Header().Name)
-		z := file.NewZone(".", "")
-		if err := z.Insert(rr); err != nil {
-			return nil, err
-		}
-		log.Infof("Log rr: %v", rr)
-		s.ctx.file.Zones.Z["."] = z
-		s.ctx.file.Zones.Names = append(s.ctx.file.Zones.Names, ".")
-	} else {
-		log.Infof("Zone %v found, try add qname %v", zone, qname)
-		rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + in.Ip + "\n")
-		if err != nil {
-			return nil, err
-		}
-		rr.Header().Name = strings.ToLower(rr.Header().Name)
-		z := s.ctx.file.Zones.Z["."]
-		if err := z.Insert(rr); err != nil {
-			return nil, err
-		}
-		log.Infof("Log rr: %v", rr)
-		s.ctx.file.Zones.Z["."] = z
-	}
-
-	for s2, z := range s.ctx.file.Zones.Z {
-		log.Infof("Zone %v", s2)
-		for _, i2 := range z.All() {
-			log.Infof("RR records %v", i2.All())
-		}
-	}
-
-	return &ResponseStatus{Message: "Received " + in.Host + " IP " + in.Ip, Status: true}, nil
 }
