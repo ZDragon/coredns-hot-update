@@ -49,6 +49,8 @@ func (re *HotUpdate) Name() string { return "hotupdate" }
 func (re *HotUpdate) ReCalculateDB(client listers.FederationDNSLister) {
 	log.Infof("Call ReCalculateDB")
 
+	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
+
 	list, err := client.FederationDNSs("supermesh").List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
