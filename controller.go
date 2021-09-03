@@ -56,9 +56,7 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fe
 		UpdateFunc: func(old, new interface{}) {
 			controller.enqueueFoo(new)
 		},
-		DeleteFunc: func(obj interface{}) {
-			controller.enqueueFoo(new)
-		},
+		DeleteFunc: controller.enqueueFoo,
 	})
 
 	return controller
