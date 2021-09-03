@@ -76,7 +76,7 @@ func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
 
 		for _, v := range in.Spec.RR {
 			log.Infof("RR %v", v)
-			rr, err := dns.NewRR(fmt.Sprintf("$ORIGIN %s \n %s \n", qname, v))
+			rr, err := dns.NewRR("$ORIGIN" + qname + "\n" + v + "\n")
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
 		log.Infof("Zone %v found, try add qname %v", zone, qname)
 		z := re.file.Zones.Z["."]
 		for _, v := range in.Spec.RR {
-			rr, err := dns.NewRR(fmt.Sprintf("$ORIGIN %s \n %s \n", qname, v))
+			rr, err := dns.NewRR("$ORIGIN" + qname + "\n" + v + "\n")
 			if err != nil {
 				return err
 			}
