@@ -180,7 +180,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	klog.Infof("Sync resource %s", foo.Name)
-	c.plugin.ReCalculateDB(c.sampleclientset)
+	c.plugin.ReCalculateDB(c.foosLister)
 
 	return nil
 }
