@@ -47,8 +47,11 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 func (re *HotUpdate) Name() string { return "hotupdate" }
 
 func (re *HotUpdate) ReCalculateDB(client clientset.Interface) {
+	log.Infof("Call ReCalculateDB")
+
 	list, err := client.NetworkingV1().FederationDNSs("supermesh").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
+		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
 	}
 
@@ -56,6 +59,7 @@ func (re *HotUpdate) ReCalculateDB(client clientset.Interface) {
 		fmt.Println(i, v)
 		err := re.Add(context.TODO(), v)
 		if err != nil {
+			log.Errorf("Call ReCalculateDB Add RR Error %s", err)
 			return
 		}
 	}
