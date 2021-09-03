@@ -7,10 +7,10 @@ import (
 	"context"
 	"fmt"
 	v1 "github.com/ZDragon/coredns-hot-update/pkg/apis/networking/v1"
-	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
+	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"strings"
 
 	//"github.com/coredns/coredns/plugin/metrics"
@@ -46,16 +46,16 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 // Name implements the Handler interface.
 func (re *HotUpdate) Name() string { return "hotupdate" }
 
-func (re *HotUpdate) ReCalculateDB(client clientset.Interface) {
+func (re *HotUpdate) ReCalculateDB(client listers.FederationDNSLister) {
 	log.Infof("Call ReCalculateDB")
 
-	list, err := client.NetworkingV1().FederationDNSs("supermesh").List(context.TODO(), metav1.ListOptions{})
+	list, err := client.FederationDNSs("supermesh").List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
 	}
 
-	for i, v := range list.Items {
+	for i, v := range list {
 		fmt.Println(i, v)
 		err := re.Add(context.TODO(), v)
 		if err != nil {
@@ -65,7 +65,7 @@ func (re *HotUpdate) ReCalculateDB(client clientset.Interface) {
 	}
 }
 
-func (re *HotUpdate) Add(ctx context.Context, in v1.FederationDNS) error {
+func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
 	log.Infof("Received: %v %v %v", in.Name, in.Spec.Host, in.Spec.RR)
 	qname := plugin.Host(in.Spec.Host).Normalize()
 	log.Infof("Origins len: %v", len(re.file.Zones.Names))
