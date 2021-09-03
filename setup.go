@@ -65,6 +65,6 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	// All OK, return a nil error.
+	// All OK, return a nil error. very useful comment
 	return nil
 }
