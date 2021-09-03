@@ -5,11 +5,11 @@ package hotupdate
 
 import (
 	"context"
-	"fmt"
 	v1 "github.com/ZDragon/coredns-hot-update/pkg/apis/networking/v1"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
+	"github.com/coredns/coredns/request"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
 
@@ -40,6 +40,17 @@ type HotUpdate struct {
 // ServeDNS implements the plugin.Handler interface. This method gets called when example is used
 // in a Server.
 func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	state := request.Request{W: w, Req: r}
+	qname := state.Name()
+	log.Infof("ServeDNS query %v", qname)
+
+	for s2, z := range re.file.Zones.Z {
+		log.Infof("Zone %v", s2)
+		for _, i2 := range z.All() {
+			log.Infof("RR records %v", i2.All())
+		}
+	}
+
 	return re.file.ServeDNS(ctx, w, r)
 }
 
@@ -57,8 +68,7 @@ func (re *HotUpdate) ReCalculateDB(client listers.FederationDNSLister) {
 		return
 	}
 
-	for i, v := range list {
-		fmt.Println(i, v)
+	for _, v := range list {
 		err := re.Add(context.TODO(), v)
 		if err != nil {
 			log.Errorf("Call ReCalculateDB Add RR Error %s", err)
@@ -68,16 +78,16 @@ func (re *HotUpdate) ReCalculateDB(client listers.FederationDNSLister) {
 }
 
 func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
-	log.Infof("Received: %v %v %v", in.Name, in.Spec.Host, in.Spec.RR)
+	//log.Infof("Received: %v %v %v", in.Name, in.Spec.Host, in.Spec.RR)
 	qname := plugin.Host(in.Spec.Host).Normalize()
-	log.Infof("Origins len: %v", len(re.file.Zones.Names))
+	//log.Infof("Origins len: %v", len(re.file.Zones.Names))
 	zone := plugin.Zones(re.file.Zones.Names).Matches(qname)
 	if zone == "" {
-		log.Infof("Zone %v empty, try add qname %v", zone, qname)
+		//log.Infof("Zone %v empty, try add qname %v", zone, qname)
 		z := file.NewZone(".", "")
 
 		for _, v := range in.Spec.RR {
-			log.Infof("RR %v", v)
+			//log.Infof("RR %v", v)
 			rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
 			if err != nil {
 				return err
@@ -86,13 +96,13 @@ func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
 			if err := z.Insert(rr); err != nil {
 				return err
 			}
-			log.Infof("Log rr: %v", rr)
+			//log.Infof("Log rr: %v", rr)
 		}
 
 		re.file.Zones.Z["."] = z
 		re.file.Zones.Names = append(re.file.Zones.Names, ".")
 	} else {
-		log.Infof("Zone %v found, try add qname %v", zone, qname)
+		//log.Infof("Zone %v found, try add qname %v", zone, qname)
 		z := re.file.Zones.Z["."]
 		for _, v := range in.Spec.RR {
 			rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
@@ -103,17 +113,17 @@ func (re *HotUpdate) Add(ctx context.Context, in *v1.FederationDNS) error {
 			if err := z.Insert(rr); err != nil {
 				return err
 			}
-			log.Infof("Log rr: %v", rr)
+			//log.Infof("Log rr: %v", rr)
 		}
 		re.file.Zones.Z["."] = z
 	}
-
-	for s2, z := range re.file.Zones.Z {
-		log.Infof("Zone %v", s2)
-		for _, i2 := range z.All() {
-			log.Infof("RR records %v", i2.All())
-		}
-	}
+	/*
+		for s2, z := range re.file.Zones.Z {
+			log.Infof("Zone %v", s2)
+			for _, i2 := range z.All() {
+				log.Infof("RR records %v", i2.All())
+			}
+		}*/
 
 	return nil
 }
