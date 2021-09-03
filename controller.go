@@ -16,23 +16,6 @@ import (
 	"time"
 )
 
-const controllerAgentName = "sample-controller"
-
-const (
-	// SuccessSynced is used as part of the Event 'reason' when a Foo is synced
-	SuccessSynced = "Synced"
-	// ErrResourceExists is used as part of the Event 'reason' when a Foo fails
-	// to sync due to a Deployment of the same name already existing.
-	ErrResourceExists = "ErrResourceExists"
-
-	// MessageResourceExists is the message used for Events when a resource
-	// fails to sync due to a Deployment already existing
-	MessageResourceExists = "Resource %q already exists and is not managed by Foo"
-	// MessageResourceSynced is the message used for an Event fired when a Foo
-	// is synced successfully
-	MessageResourceSynced = "Foo synced successfully"
-)
-
 // Controller is the controller implementation for Foo resources
 type Controller struct {
 	// sampleclientset is a clientset for our own API group
@@ -46,12 +29,11 @@ type Controller struct {
 	// time, and makes it easy to ensure we are never processing the same item
 	// simultaneously in two different workers.
 	workqueue workqueue.RateLimitingInterface
+	plugin    *HotUpdate
 }
 
 // NewController returns a new sample controller
-func NewController(
-	sampleclientset clientset.Interface,
-	fooInformer informers.FederationDNSInformer) *Controller {
+func NewController(sampleclientset clientset.Interface, fooInformer informers.FederationDNSInformer, re *HotUpdate) *Controller {
 
 	// Create event broadcaster
 	// Add sample-controller types to the default Kubernetes Scheme so Events can be
@@ -63,7 +45,8 @@ func NewController(
 		sampleclientset: sampleclientset,
 		foosLister:      fooInformer.Lister(),
 		foosSynced:      fooInformer.Informer().HasSynced,
-		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Foos"),
+		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "FederationDNSs"),
+		plugin:          re,
 	}
 
 	klog.Info("Setting up event handlers")
@@ -71,6 +54,9 @@ func NewController(
 	fooInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueFoo,
 		UpdateFunc: func(old, new interface{}) {
+			controller.enqueueFoo(new)
+		},
+		DeleteFunc: func(obj interface{}) {
 			controller.enqueueFoo(new)
 		},
 	})
@@ -196,6 +182,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	klog.Infof("Sync resource %s", foo.Name)
+	c.plugin.ReCalculateDB(c.sampleclientset)
 
 	return nil
 }

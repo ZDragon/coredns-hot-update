@@ -5,8 +5,14 @@ package hotupdate
 
 import (
 	"context"
+	"fmt"
+	v1 "github.com/ZDragon/coredns-hot-update/pkg/apis/networking/v1"
+	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
+
 	//"github.com/coredns/coredns/plugin/metrics"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/miekg/dns"
@@ -39,6 +45,72 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 
 // Name implements the Handler interface.
 func (re *HotUpdate) Name() string { return "hotupdate" }
+
+func (re *HotUpdate) ReCalculateDB(client clientset.Interface) {
+	list, err := client.NetworkingV1().FederationDNSs("supermesh").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+
+	for i, v := range list.Items {
+		fmt.Println(i, v)
+		err := re.Add(context.TODO(), v)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func (re *HotUpdate) Add(ctx context.Context, in v1.FederationDNS) error {
+	log.Infof("Received: %v %v %v", in.Name, in.Spec.Host, in.Spec.RR)
+	qname := plugin.Host(in.Spec.Host).Normalize()
+	log.Infof("Origins len: %v", len(re.file.Zones.Names))
+	zone := plugin.Zones(re.file.Zones.Names).Matches(qname)
+	if zone == "" {
+		log.Infof("Zone %v empty, try add qname %v", zone, qname)
+		z := file.NewZone(".", "")
+
+		for _, v := range in.Spec.RR {
+			log.Infof("RR %v", v)
+			rr, err := dns.NewRR(fmt.Sprintf("$ORIGIN %s \n %s \n", qname, v))
+			if err != nil {
+				return err
+			}
+			rr.Header().Name = strings.ToLower(rr.Header().Name)
+			if err := z.Insert(rr); err != nil {
+				return err
+			}
+			log.Infof("Log rr: %v", rr)
+		}
+
+		re.file.Zones.Z["."] = z
+		re.file.Zones.Names = append(re.file.Zones.Names, ".")
+	} else {
+		log.Infof("Zone %v found, try add qname %v", zone, qname)
+		z := re.file.Zones.Z["."]
+		for _, v := range in.Spec.RR {
+			rr, err := dns.NewRR(fmt.Sprintf("$ORIGIN %s \n %s \n", qname, v))
+			if err != nil {
+				return err
+			}
+			rr.Header().Name = strings.ToLower(rr.Header().Name)
+			if err := z.Insert(rr); err != nil {
+				return err
+			}
+			log.Infof("Log rr: %v", rr)
+		}
+		re.file.Zones.Z["."] = z
+	}
+
+	for s2, z := range re.file.Zones.Z {
+		log.Infof("Zone %v", s2)
+		for _, i2 := range z.All() {
+			log.Infof("RR records %v", i2.All())
+		}
+	}
+
+	return nil
+}
 
 // New returns a pointer to a new and intialized Records.
 func New() *HotUpdate {
