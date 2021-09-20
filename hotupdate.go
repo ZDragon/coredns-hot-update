@@ -48,6 +48,24 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 // Name implements the Handler interface.
 func (re *HotUpdate) Name() string { return "hotupdate" }
 
+func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, qname string) bool {
+	log.Infof("Call CheckInDB with check" + qname)
+
+	list, err := client.FederationDNSs("supermesh").List(labels.Everything())
+	if err != nil {
+		log.Errorf("Call CheckInDB Error %s", err)
+		return false
+	}
+
+	for _, v := range list {
+		if strings.ToLower(v.Spec.Host) == strings.ToLower(qname) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (re *HotUpdate) ReCalculateDB(client listers.FederationDNSLister) {
 	log.Infof("Call ReCalculateDB")
 

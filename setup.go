@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions"
+	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	"github.com/ZDragon/coredns-hot-update/pkg/signals"
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
@@ -37,14 +38,6 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	go startKubeAPI(re)
-	go startRestAPI(re)
-
-	// All OK, return a nil error. very useful comment
-	return nil
-}
-
-func startKubeAPI(re *HotUpdate) {
 	// use the current context in kubeconfig
 	// use for local dev
 	config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
@@ -57,13 +50,20 @@ func startKubeAPI(re *HotUpdate) {
 		panic(err.Error())
 	}*/
 
-	// set up signals so we handle the first shutdown signal gracefully
-	stopCh := signals.SetupSignalHandler()
-
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
 	}
+
+	go startKubeAPI(re, exampleClient)
+
+	// All OK, return a nil error. very useful comment
+	return nil
+}
+
+func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
+	// set up signals so we handle the first shutdown signal gracefully
+	stopCh := signals.SetupSignalHandler()
 
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 
@@ -74,14 +74,16 @@ func startKubeAPI(re *HotUpdate) {
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
 	exampleInformerFactory.Start(stopCh)
 
-	if err = controller.Run(2, stopCh); err != nil {
+	err := controller.Run(2, stopCh)
+	if err != nil {
 		klog.Fatalf("Error running controller: %s", err.Error())
 	}
 
 	klog.Info("KubeAPI Controller started")
+	go startRestAPI(re, controller.foosLister)
 }
 
-func startRestAPI(re *HotUpdate) {
+func startRestAPI(re *HotUpdate, client listers.FederationDNSLister) {
 	port := os.Getenv("PORT") //Получить порт из файла .env; мы не указали порт, поэтому при локальном тестировании должна возвращаться пустая строка
 	if port == "" {
 		port = "8000" //localhost
@@ -98,21 +100,7 @@ func startRestAPI(re *HotUpdate) {
 
 		qname := r.PostFormValue("host")
 		klog.Info("Get req for check with host " + qname)
-		zone := plugin.Zones(re.file.Zones.Names).Matches(qname)
-		klog.Info("Zone: " + zone)
-		if zone == "" {
-			sendResponse(w, err, false)
-		}
-
-		z, ok := re.file.Zones.Z[zone]
-		klog.Infof("Zone found: %s", ok)
-		if !ok || z == nil {
-			sendResponse(w, err, false)
-		}
-
-		_, result := z.Search(qname)
-
-		sendResponse(w, err, result)
+		sendResponse(w, err, re.CheckInDB(client, qname))
 	})
 	err := http.ListenAndServe(":"+port, nil) //Запустите приложение, посетите localhost:8000/api
 
