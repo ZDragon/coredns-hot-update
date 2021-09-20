@@ -7,7 +7,7 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 	"time"
 )
@@ -37,15 +37,16 @@ func setup(c *caddy.Controller) error {
 	go func() {
 
 		// use the current context in kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
-		if err != nil {
-			panic(err.Error())
-		}
-
-		/*config, err := rest.InClusterConfig()
+		// use for local dev
+		/*config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
 		if err != nil {
 			panic(err.Error())
 		}*/
+
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			panic(err.Error())
+		}
 
 		// set up signals so we handle the first shutdown signal gracefully
 		stopCh := signals.SetupSignalHandler()
