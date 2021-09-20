@@ -70,6 +70,8 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	controller := NewController(exampleClient,
 		exampleInformerFactory.Networking().V1().FederationDNSs(), re)
 
+	go startRestAPI(re, controller.foosLister)
+
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
 	exampleInformerFactory.Start(stopCh)
@@ -80,7 +82,6 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	}
 
 	klog.Info("KubeAPI Controller started")
-	go startRestAPI(re, controller.foosLister)
 }
 
 func startRestAPI(re *HotUpdate, client listers.FederationDNSLister) {
