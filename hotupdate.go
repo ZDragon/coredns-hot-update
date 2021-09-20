@@ -18,18 +18,9 @@ import (
 	"github.com/miekg/dns"
 )
 
-const (
-	port = ":50051"
-)
-
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
 var log = clog.NewWithPlugin("hotupdate")
-
-// server is used to implement helloworld.GreeterServer.
-type server struct {
-	ctx *HotUpdate
-}
 
 // HotUpdate Example is an example plugin to show how to write a plugin.
 type HotUpdate struct {
