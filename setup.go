@@ -9,7 +9,7 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 	"net/http"
 	"os"
@@ -40,15 +40,15 @@ func setup(c *caddy.Controller) error {
 
 	// use the current context in kubeconfig
 	// use for local dev
-	config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	/*config, err := rest.InClusterConfig()
+	/*config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
 	if err != nil {
 		panic(err.Error())
 	}*/
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
