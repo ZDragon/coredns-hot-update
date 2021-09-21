@@ -72,6 +72,7 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 		exampleInformerFactory.Networking().V1().FederationDNSSlices(),
 		re)
 
+	re.ReCalculateDB(exampleClient, controller.singleDNSLister, controller.sliceDNSLister, true)
 	go startRestAPI(re, controller.singleDNSLister, controller.sliceDNSLister)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)

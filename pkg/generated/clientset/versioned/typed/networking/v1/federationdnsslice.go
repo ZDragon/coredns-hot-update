@@ -39,6 +39,7 @@ type FederationDNSSlicesGetter interface {
 type FederationDNSSliceInterface interface {
 	Create(ctx context.Context, federationDNSSlice *v1.FederationDNSSlice, opts metav1.CreateOptions) (*v1.FederationDNSSlice, error)
 	Update(ctx context.Context, federationDNSSlice *v1.FederationDNSSlice, opts metav1.UpdateOptions) (*v1.FederationDNSSlice, error)
+	UpdateStatus(ctx context.Context, federationDNSSlice *v1.FederationDNSSlice, opts metav1.UpdateOptions) (*v1.FederationDNSSlice, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.FederationDNSSlice, error)
@@ -127,6 +128,22 @@ func (c *federationDNSSlices) Update(ctx context.Context, federationDNSSlice *v1
 		Namespace(c.ns).
 		Resource("federationdnsslices").
 		Name(federationDNSSlice.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(federationDNSSlice).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *federationDNSSlices) UpdateStatus(ctx context.Context, federationDNSSlice *v1.FederationDNSSlice, opts metav1.UpdateOptions) (result *v1.FederationDNSSlice, err error) {
+	result = &v1.FederationDNSSlice{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("federationdnsslices").
+		Name(federationDNSSlice.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(federationDNSSlice).
 		Do(ctx).

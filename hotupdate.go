@@ -5,10 +5,12 @@ package hotupdate
 
 import (
 	"context"
+	versioned "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
 	"github.com/coredns/coredns/request"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
 
@@ -17,7 +19,10 @@ import (
 	"github.com/miekg/dns"
 )
 
-const FEDERATION_NS = "supermesh"
+const (
+	FederationNs    = "supermesh"
+	StatusProcessed = "Processed"
+)
 
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
@@ -49,10 +54,10 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 // Name implements the Handler interface.
 func (re *HotUpdate) Name() string { return "hotupdate" }
 
-func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, lister listers.FederationDNSSliceLister, qname string) bool {
+func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, sliceDNS listers.FederationDNSSliceLister, qname string) bool {
 	log.Infof("Call CheckInDB with check" + qname)
 
-	list, err := client.FederationDNSs(FEDERATION_NS).List(labels.Everything())
+	list, err := client.FederationDNSs(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call CheckInDB Error %s", err)
 		return false
@@ -64,39 +69,70 @@ func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, lister lister
 		}
 	}
 
+	listSlices, err := sliceDNS.FederationDNSSlices(FederationNs).List(labels.Everything())
+	if err != nil {
+		log.Errorf("Call ReCalculateDB Error %s", err)
+		return false
+	}
+
+	for _, v := range listSlices {
+		for _, ii := range v.Spec.Items {
+			if strings.ToLower(ii.Host) == strings.ToLower(qname) {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
-func (re *HotUpdate) ReCalculateDB(singleDNS listers.FederationDNSLister, sliceDNS listers.FederationDNSSliceLister) {
+func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
+	singleDNS listers.FederationDNSLister, sliceDNS listers.FederationDNSSliceLister, forceMode bool) {
 	log.Infof("Call ReCalculateDB")
 
 	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 
-	list, err := singleDNS.FederationDNSs(FEDERATION_NS).List(labels.Everything())
+	list, err := singleDNS.FederationDNSs(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
 	}
 
 	for _, v := range list {
-		err := re.Add(context.TODO(), v.Name, v.Spec.Host, v.Spec.RR)
-		if err != nil {
-			log.Errorf("Call ReCalculateDB Add RR Error %s", err)
-			return
+		if v.Status.Process != StatusProcessed || forceMode {
+			err := re.Add(context.TODO(), v.Name, v.Spec.Host, v.Spec.RR)
+			if err != nil {
+				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+				return
+			}
+			v.Status.Process = StatusProcessed
+			status, err := cl.NetworkingV1().FederationDNSs(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
+			if err != nil {
+				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
+				return
+			}
 		}
 	}
 
-	listSlices, err := sliceDNS.FederationDNSSlices(FEDERATION_NS).List(labels.Everything())
+	listSlices, err := sliceDNS.FederationDNSSlices(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
 	}
 
 	for _, v := range listSlices {
-		for _, ii := range v.Spec.Items {
-			err := re.Add(context.TODO(), v.Name, ii.Host, ii.RR)
+		if v.Status.Process != StatusProcessed || forceMode {
+			for _, ii := range v.Spec.Items {
+				err := re.Add(context.TODO(), v.Name, ii.Host, ii.RR)
+				if err != nil {
+					log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+					return
+				}
+			}
+			v.Status.Process = StatusProcessed
+			status, err := cl.NetworkingV1().FederationDNSSlices(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
 			if err != nil {
-				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
 				return
 			}
 		}

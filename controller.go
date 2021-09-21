@@ -173,7 +173,7 @@ func (c *Controller) processNextWorkItem() bool {
 // with the current status of the resource.
 func (c *Controller) syncHandler(key string) error {
 
-	c.plugin.ReCalculateDB(c.singleDNSLister, c.sliceDNSLister)
+	c.plugin.ReCalculateDB(c.sampleclientset, c.singleDNSLister, c.sliceDNSLister, false)
 
 	return nil
 }

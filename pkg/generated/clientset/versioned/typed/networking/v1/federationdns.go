@@ -39,6 +39,7 @@ type FederationDNSsGetter interface {
 type FederationDNSInterface interface {
 	Create(ctx context.Context, federationDNS *v1.FederationDNS, opts metav1.CreateOptions) (*v1.FederationDNS, error)
 	Update(ctx context.Context, federationDNS *v1.FederationDNS, opts metav1.UpdateOptions) (*v1.FederationDNS, error)
+	UpdateStatus(ctx context.Context, federationDNS *v1.FederationDNS, opts metav1.UpdateOptions) (*v1.FederationDNS, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.FederationDNS, error)
@@ -127,6 +128,22 @@ func (c *federationDNSs) Update(ctx context.Context, federationDNS *v1.Federatio
 		Namespace(c.ns).
 		Resource("federationdnss").
 		Name(federationDNS.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(federationDNS).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *federationDNSs) UpdateStatus(ctx context.Context, federationDNS *v1.FederationDNS, opts metav1.UpdateOptions) (result *v1.FederationDNS, err error) {
+	result = &v1.FederationDNS{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("federationdnss").
+		Name(federationDNS.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(federationDNS).
 		Do(ctx).

@@ -11,6 +11,12 @@ type FederationDNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              FederationDNSSpec `json:"spec,omitempty"`
+	// +optional
+	Status FederationDNSStatus `json:"status,omitempty"`
+}
+
+type FederationDNSStatus struct {
+	Process string
 }
 
 type FederationDNSSpec struct {
@@ -41,6 +47,8 @@ type FederationDNSSlice struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              FederationDNSSliceSpec `json:"spec,omitempty"`
+	// +optional
+	Status FederationDNSStatus `json:"status,omitempty"`
 }
 
 type FederationDNSSliceSpec struct {

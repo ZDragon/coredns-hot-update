@@ -101,6 +101,18 @@ func (c *FakeFederationDNSSlices) Update(ctx context.Context, federationDNSSlice
 	return obj.(*networkingv1.FederationDNSSlice), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeFederationDNSSlices) UpdateStatus(ctx context.Context, federationDNSSlice *networkingv1.FederationDNSSlice, opts v1.UpdateOptions) (*networkingv1.FederationDNSSlice, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(federationdnsslicesResource, "status", c.ns, federationDNSSlice), &networkingv1.FederationDNSSlice{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*networkingv1.FederationDNSSlice), err
+}
+
 // Delete takes name of the federationDNSSlice and deletes it. Returns an error if one occurs.
 func (c *FakeFederationDNSSlices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
