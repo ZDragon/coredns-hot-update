@@ -6,7 +6,6 @@ import (
 	samplescheme "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned/scheme"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/networking/v1"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -20,8 +19,10 @@ import (
 type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
-	foosLister      listers.FederationDNSLister
-	foosSynced      cache.InformerSynced
+	singleDNSLister listers.FederationDNSLister
+	sliceDNSLister  listers.FederationDNSSliceLister
+	singleDNSSynced cache.InformerSynced
+	sliceDNSSynced  cache.InformerSynced
 
 	// workqueue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
@@ -33,7 +34,10 @@ type Controller struct {
 }
 
 // NewController returns a new sample controller
-func NewController(sampleclientset clientset.Interface, fooInformer informers.FederationDNSInformer, re *HotUpdate) *Controller {
+func NewController(sampleclientset clientset.Interface,
+	singleHostDNSInformer informers.FederationDNSInformer,
+	slicesDNSInformer informers.FederationDNSSliceInformer,
+	re *HotUpdate) *Controller {
 
 	// Create event broadcaster
 	// Add sample-controller types to the default Kubernetes Scheme so Events can be
@@ -43,15 +47,25 @@ func NewController(sampleclientset clientset.Interface, fooInformer informers.Fe
 
 	controller := &Controller{
 		sampleclientset: sampleclientset,
-		foosLister:      fooInformer.Lister(),
-		foosSynced:      fooInformer.Informer().HasSynced,
+		singleDNSLister: singleHostDNSInformer.Lister(),
+		singleDNSSynced: singleHostDNSInformer.Informer().HasSynced,
+		sliceDNSLister:  slicesDNSInformer.Lister(),
+		sliceDNSSynced:  slicesDNSInformer.Informer().HasSynced,
 		workqueue:       workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "FederationDNSs"),
 		plugin:          re,
 	}
 
 	klog.Info("Setting up event handlers")
 	// Set up an event handler for when Foo resources change
-	fooInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	singleHostDNSInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: controller.enqueueFoo,
+		UpdateFunc: func(old, new interface{}) {
+			controller.enqueueFoo(new)
+		},
+		DeleteFunc: controller.enqueueFoo,
+	})
+
+	slicesDNSInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueFoo,
 		UpdateFunc: func(old, new interface{}) {
 			controller.enqueueFoo(new)
@@ -75,7 +89,7 @@ func (c *Controller) Run(workers int, stopCh <-chan struct{}) error {
 
 	// Wait for the caches to be synced before starting workers
 	klog.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.foosSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.singleDNSSynced, c.sliceDNSSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -143,7 +157,6 @@ func (c *Controller) processNextWorkItem() bool {
 		// Finally, if no error occurs we Forget this item so it does not
 		// get queued again until another change happens.
 		c.workqueue.Forget(obj)
-		klog.Infof("Successfully synced '%s'", key)
 		return nil
 	}(obj)
 
@@ -159,28 +172,8 @@ func (c *Controller) processNextWorkItem() bool {
 // converge the two. It then updates the Status block of the Foo resource
 // with the current status of the resource.
 func (c *Controller) syncHandler(key string) error {
-	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
-		return nil
-	}
 
-	// Get the Foo resource with this namespace/name
-	foo, err := c.foosLister.FederationDNSs(namespace).Get(name)
-	if err != nil {
-		// The Foo resource may no longer exist, in which case we stop
-		// processing.
-		if errors.IsNotFound(err) {
-			utilruntime.HandleError(fmt.Errorf("foo '%s' in work queue no longer exists", key))
-			return nil
-		}
-
-		return err
-	}
-
-	klog.Infof("Sync resource %s", foo.Name)
-	c.plugin.ReCalculateDB(c.foosLister)
+	c.plugin.ReCalculateDB(c.singleDNSLister, c.sliceDNSLister)
 
 	return nil
 }
@@ -196,5 +189,4 @@ func (c *Controller) enqueueFoo(obj interface{}) {
 		return
 	}
 	c.workqueue.Add(key)
-	klog.Infof("Process dns record %s", key)
 }

@@ -18,3 +18,5 @@ limitations under the License.
 package v1
 
 type FederationDNSExpansion interface{}
+
+type FederationDNSSliceExpansion interface{}

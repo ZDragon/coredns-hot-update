@@ -9,7 +9,7 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"net/http"
 	"os"
@@ -40,15 +40,15 @@ func setup(c *caddy.Controller) error {
 
 	// use the current context in kubeconfig
 	// use for local dev
-	/*config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
-	if err != nil {
-		panic(err.Error())
-	}*/
-
-	config, err := rest.InClusterConfig()
+	config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
 	if err != nil {
 		panic(err.Error())
 	}
+
+	/*config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}*/
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -68,15 +68,17 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 
 	controller := NewController(exampleClient,
-		exampleInformerFactory.Networking().V1().FederationDNSs(), re)
+		exampleInformerFactory.Networking().V1().FederationDNSs(),
+		exampleInformerFactory.Networking().V1().FederationDNSSlices(),
+		re)
 
-	go startRestAPI(re, controller.foosLister)
+	go startRestAPI(re, controller.singleDNSLister, controller.sliceDNSLister)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)
 	// Start method is non-blocking and runs all registered informers in a dedicated goroutine.
 	exampleInformerFactory.Start(stopCh)
 
-	err := controller.Run(2, stopCh)
+	err := controller.Run(1, stopCh)
 	if err != nil {
 		klog.Fatalf("Error running controller: %s", err.Error())
 	}
@@ -84,7 +86,7 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	klog.Info("KubeAPI Controller started")
 }
 
-func startRestAPI(re *HotUpdate, client listers.FederationDNSLister) {
+func startRestAPI(re *HotUpdate, client listers.FederationDNSLister, lister listers.FederationDNSSliceLister) {
 	port := os.Getenv("PORT") //Получить порт из файла .env; мы не указали порт, поэтому при локальном тестировании должна возвращаться пустая строка
 	if port == "" {
 		port = "8000" //localhost
@@ -101,7 +103,7 @@ func startRestAPI(re *HotUpdate, client listers.FederationDNSLister) {
 
 		qname := r.PostFormValue("host")
 		klog.Info("Get req for check with host " + qname)
-		sendResponse(w, err, re.CheckInDB(client, qname))
+		sendResponse(w, err, re.CheckInDB(client, lister, qname))
 	})
 	err := http.ListenAndServe(":"+port, nil) //Запустите приложение, посетите localhost:8000/api
 

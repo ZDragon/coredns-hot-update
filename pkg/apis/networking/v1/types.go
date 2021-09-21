@@ -6,7 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 //
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:singular=hero,path=heroes,shortName=he;sh,scope=Namespaced,categories=heroes;superheroes
+// +kubebuilder:resource:singular=federationdns,path=federationdnss,shortName=fddns;sh,scope=Namespaced,categories=dns;federationdns
 type FederationDNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -30,4 +30,31 @@ type FederationDNSList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []FederationDNS `json:"items"`
+}
+
+// FederationDNSSlice records
+//
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:singular=federationdnsslice,path=federationdnsslices,shortName=fddnsslice;sh,scope=Namespaced,categories=dns;federationdns
+type FederationDNSSlice struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              FederationDNSSliceSpec `json:"spec,omitempty"`
+}
+
+type FederationDNSSliceSpec struct {
+	// +listType=map
+	// +optional
+	Items []FederationDNSSpec `json:"items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// FederationDNSSliceList is a list of Hero resources.
+type FederationDNSSliceList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []FederationDNSSlice `json:"items"`
 }

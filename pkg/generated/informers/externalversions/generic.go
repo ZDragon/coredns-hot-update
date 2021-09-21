@@ -54,6 +54,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=networking.synapse.sber, Version=v1
 	case v1.SchemeGroupVersion.WithResource("federationdnss"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1().FederationDNSs().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("federationdnsslices"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1().FederationDNSSlices().Informer()}, nil
 
 	}
 

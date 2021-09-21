@@ -24,3 +24,11 @@ type FederationDNSListerExpansion interface{}
 // FederationDNSNamespaceListerExpansion allows custom methods to be added to
 // FederationDNSNamespaceLister.
 type FederationDNSNamespaceListerExpansion interface{}
+
+// FederationDNSSliceListerExpansion allows custom methods to be added to
+// FederationDNSSliceLister.
+type FederationDNSSliceListerExpansion interface{}
+
+// FederationDNSSliceNamespaceListerExpansion allows custom methods to be added to
+// FederationDNSSliceNamespaceLister.
+type FederationDNSSliceNamespaceListerExpansion interface{}

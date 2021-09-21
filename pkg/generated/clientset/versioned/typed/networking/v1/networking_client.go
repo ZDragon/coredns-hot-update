@@ -26,6 +26,7 @@ import (
 type NetworkingV1Interface interface {
 	RESTClient() rest.Interface
 	FederationDNSsGetter
+	FederationDNSSlicesGetter
 }
 
 // NetworkingV1Client is used to interact with features provided by the networking.synapse.sber group.
@@ -35,6 +36,10 @@ type NetworkingV1Client struct {
 
 func (c *NetworkingV1Client) FederationDNSs(namespace string) FederationDNSInterface {
 	return newFederationDNSs(c, namespace)
+}
+
+func (c *NetworkingV1Client) FederationDNSSlices(namespace string) FederationDNSSliceInterface {
+	return newFederationDNSSlices(c, namespace)
 }
 
 // NewForConfig creates a new NetworkingV1Client for the given config.

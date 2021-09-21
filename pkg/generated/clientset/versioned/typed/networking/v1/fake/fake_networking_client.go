@@ -31,6 +31,10 @@ func (c *FakeNetworkingV1) FederationDNSs(namespace string) v1.FederationDNSInte
 	return &FakeFederationDNSs{c, namespace}
 }
 
+func (c *FakeNetworkingV1) FederationDNSSlices(namespace string) v1.FederationDNSSliceInterface {
+	return &FakeFederationDNSSlices{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeNetworkingV1) RESTClient() rest.Interface {

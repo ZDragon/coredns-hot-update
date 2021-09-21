@@ -25,6 +25,8 @@ import (
 type Interface interface {
 	// FederationDNSs returns a FederationDNSInformer.
 	FederationDNSs() FederationDNSInformer
+	// FederationDNSSlices returns a FederationDNSSliceInformer.
+	FederationDNSSlices() FederationDNSSliceInformer
 }
 
 type version struct {
@@ -41,4 +43,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // FederationDNSs returns a FederationDNSInformer.
 func (v *version) FederationDNSs() FederationDNSInformer {
 	return &federationDNSInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// FederationDNSSlices returns a FederationDNSSliceInformer.
+func (v *version) FederationDNSSlices() FederationDNSSliceInformer {
+	return &federationDNSSliceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
