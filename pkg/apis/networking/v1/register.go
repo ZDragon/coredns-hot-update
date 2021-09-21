@@ -5,7 +5,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 const (
@@ -46,6 +45,5 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&FederationDNSSliceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
-	utilruntime.Must(AddToScheme(scheme))
 	return nil
 }
