@@ -3,12 +3,15 @@ package hotupdate
 import (
 	"encoding/json"
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
+	samplescheme "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned/scheme"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	"github.com/ZDragon/coredns-hot-update/pkg/signals"
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"net/http"
@@ -64,6 +67,8 @@ func setup(c *caddy.Controller) error {
 func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	// set up signals so we handle the first shutdown signal gracefully
 	stopCh := signals.SetupSignalHandler()
+
+	utilruntime.Must(samplescheme.AddToScheme(scheme.Scheme))
 
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 

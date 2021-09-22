@@ -3,12 +3,10 @@ package hotupdate
 import (
 	"fmt"
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
-	samplescheme "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned/scheme"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/networking/v1"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
@@ -42,7 +40,6 @@ func NewController(sampleclientset clientset.Interface,
 	// Create event broadcaster
 	// Add sample-controller types to the default Kubernetes Scheme so Events can be
 	// logged for sample-controller types.
-	utilruntime.Must(samplescheme.AddToScheme(scheme.Scheme))
 	klog.V(4).Info("Creating event broadcaster")
 
 	controller := &Controller{

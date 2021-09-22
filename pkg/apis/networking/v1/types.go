@@ -7,12 +7,12 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:singular=federationdns,path=federationdnss,shortName=fddns;sh,scope=Namespaced,categories=dns;federationdns
+// +kubebuilder:subresource:status
 type FederationDNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              FederationDNSSpec `json:"spec,omitempty"`
-	// +optional
-	Status FederationDNSStatus `json:"status,omitempty"`
+	Spec              FederationDNSSpec   `json:"spec,omitempty"`
+	Status            FederationDNSStatus `json:"status,omitempty"`
 }
 
 type FederationDNSStatus struct {
@@ -43,12 +43,12 @@ type FederationDNSList struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:singular=federationdnsslice,path=federationdnsslices,shortName=fddnsslice;sh,scope=Namespaced,categories=dns;federationdns
+// +kubebuilder:subresource:status
 type FederationDNSSlice struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              FederationDNSSliceSpec `json:"spec,omitempty"`
-	// +optional
-	Status FederationDNSStatus `json:"status,omitempty"`
+	Status            FederationDNSStatus    `json:"status,omitempty"`
 }
 
 type FederationDNSSliceSpec struct {
