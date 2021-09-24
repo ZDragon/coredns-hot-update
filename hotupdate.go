@@ -6,7 +6,7 @@ package hotupdate
 import (
 	"context"
 	versioned "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
-	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
+	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
 	"github.com/coredns/coredns/request"
@@ -54,10 +54,10 @@ func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.
 // Name implements the Handler interface.
 func (re *HotUpdate) Name() string { return "hotupdate" }
 
-func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, sliceDNS listers.FederationDNSSliceLister, qname string) bool {
+func (re *HotUpdate) CheckInDB(client listers.HostEntryLister, sliceDNS listers.HostEntriesSliceLister, qname string) bool {
 	log.Infof("Call CheckInDB with check" + qname)
 
-	list, err := client.FederationDNSs(FederationNs).List(labels.Everything())
+	list, err := client.HostEntries(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call CheckInDB Error %s", err)
 		return false
@@ -69,7 +69,7 @@ func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, sliceDNS list
 		}
 	}
 
-	listSlices, err := sliceDNS.FederationDNSSlices(FederationNs).List(labels.Everything())
+	listSlices, err := sliceDNS.HostEntriesSlices(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return false
@@ -87,12 +87,12 @@ func (re *HotUpdate) CheckInDB(client listers.FederationDNSLister, sliceDNS list
 }
 
 func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
-	singleDNS listers.FederationDNSLister, sliceDNS listers.FederationDNSSliceLister, forceMode bool) {
+	singleDNS listers.HostEntryLister, sliceDNS listers.HostEntriesSliceLister, forceMode bool) {
 	log.Infof("Call ReCalculateDB")
 
 	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 
-	list, err := singleDNS.FederationDNSs(FederationNs).List(labels.Everything())
+	list, err := singleDNS.HostEntries(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
@@ -106,7 +106,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 				return
 			}
 			v.Status.Process = StatusProcessed
-			status, err := cl.NetworkingV1().FederationDNSs(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
+			status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
 				return
@@ -114,7 +114,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 		}
 	}
 
-	listSlices, err := sliceDNS.FederationDNSSlices(FederationNs).List(labels.Everything())
+	listSlices, err := sliceDNS.HostEntriesSlices(FederationNs).List(labels.Everything())
 	if err != nil {
 		log.Errorf("Call ReCalculateDB Error %s", err)
 		return
@@ -130,7 +130,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 				}
 			}
 			v.Status.Process = StatusProcessed
-			status, err := cl.NetworkingV1().FederationDNSSlices(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
+			status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
 				return

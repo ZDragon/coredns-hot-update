@@ -5,7 +5,7 @@ import (
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	samplescheme "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned/scheme"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions"
-	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
+	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
 	"github.com/ZDragon/coredns-hot-update/pkg/signals"
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
@@ -18,6 +18,8 @@ import (
 	"os"
 	"time"
 )
+
+const IsDev = true
 
 // init registers this plugin.
 func init() { plugin.Register("hotupdate", setup) }
@@ -41,17 +43,18 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	// use the current context in kubeconfig
-	// use for local dev
 	config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
 	if err != nil {
 		panic(err.Error())
 	}
-
-	/*config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}*/
+	// use the current context in kubeconfig
+	// use for local dev
+	if IsDev {
+		config, err = clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
+		if err != nil {
+			panic(err.Error())
+		}
+	}
 
 	exampleClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -73,8 +76,8 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	exampleInformerFactory := informers.NewSharedInformerFactory(exampleClient, time.Second*30)
 
 	controller := NewController(exampleClient,
-		exampleInformerFactory.Networking().V1().FederationDNSs(),
-		exampleInformerFactory.Networking().V1().FederationDNSSlices(),
+		exampleInformerFactory.Federation().V1alpha1().HostEntries(),
+		exampleInformerFactory.Federation().V1alpha1().HostEntriesSlices(),
 		re)
 
 	re.ReCalculateDB(exampleClient, controller.singleDNSLister, controller.sliceDNSLister, true)
@@ -92,7 +95,7 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 	klog.Info("KubeAPI Controller started")
 }
 
-func startRestAPI(re *HotUpdate, client listers.FederationDNSLister, lister listers.FederationDNSSliceLister) {
+func startRestAPI(re *HotUpdate, client listers.HostEntryLister, lister listers.HostEntriesSliceLister) {
 	port := os.Getenv("PORT") //Получить порт из файла .env; мы не указали порт, поэтому при локальном тестировании должна возвращаться пустая строка
 	if port == "" {
 		port = "8000" //localhost

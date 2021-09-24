@@ -6,7 +6,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 //
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:singular=federationdns,path=federationdnss,shortName=fddns;sh,scope=Namespaced,categories=dns;federationdns
+// +kubebuilder:resource:categories=dns,singular=federationdns,path=federationdns,shortName=fddns,scope=Namespaced
 // +kubebuilder:subresource:status
 type FederationDNS struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -42,7 +42,7 @@ type FederationDNSList struct {
 //
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:singular=federationdnsslice,path=federationdnsslices,shortName=fddnsslice;sh,scope=Namespaced,categories=dns;federationdns
+// +kubebuilder:resource:singular=federationdnsslice,path=federationdnsslice,shortName=fddnsslice;sh,scope=Namespaced,categories=dns;federationdns
 // +kubebuilder:subresource:status
 type FederationDNSSlice struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -52,8 +52,6 @@ type FederationDNSSlice struct {
 }
 
 type FederationDNSSliceSpec struct {
-	// +listType=map
-	// +optional
 	Items []FederationDNSSpec `json:"items"`
 }
 

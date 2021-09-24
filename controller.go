@@ -3,8 +3,8 @@ package hotupdate
 import (
 	"fmt"
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
-	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/networking/v1"
-	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/networking/v1"
+	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/federation/v1alpha1"
+	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -17,8 +17,8 @@ import (
 type Controller struct {
 	// sampleclientset is a clientset for our own API group
 	sampleclientset clientset.Interface
-	singleDNSLister listers.FederationDNSLister
-	sliceDNSLister  listers.FederationDNSSliceLister
+	singleDNSLister listers.HostEntryLister
+	sliceDNSLister  listers.HostEntriesSliceLister
 	singleDNSSynced cache.InformerSynced
 	sliceDNSSynced  cache.InformerSynced
 
@@ -33,8 +33,8 @@ type Controller struct {
 
 // NewController returns a new sample controller
 func NewController(sampleclientset clientset.Interface,
-	singleHostDNSInformer informers.FederationDNSInformer,
-	slicesDNSInformer informers.FederationDNSSliceInformer,
+	singleHostDNSInformer informers.HostEntryInformer,
+	slicesDNSInformer informers.HostEntriesSliceInformer,
 	re *HotUpdate) *Controller {
 
 	// Create event broadcaster
