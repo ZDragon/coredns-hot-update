@@ -47,7 +47,7 @@ func init() {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&HostEntry{},
-		&HostEntriesList{},
+		&HostEntryList{},
 		&HostEntriesSlice{},
 		&HostEntriesSliceList{},
 	)

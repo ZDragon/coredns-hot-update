@@ -30,8 +30,8 @@ type HostEntrySpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// HostEntriesList is a list of Hero resources.
-type HostEntriesList struct {
+// HostEntryList is a list of Hero resources.
+type HostEntryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
