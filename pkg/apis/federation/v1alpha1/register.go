@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/ZDragon/coredns-hot-update/pkg/apis/networking"
+	"github.com/ZDragon/coredns-hot-update/pkg/apis/federation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -12,7 +12,7 @@ const (
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: networking.GroupName, Version: version}
+var SchemeGroupVersion = schema.GroupVersion{Group: federation.GroupName, Version: version}
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {

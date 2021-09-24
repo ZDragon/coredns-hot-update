@@ -1,4 +1,4 @@
-package networking
+package federation
 
 const (
 	// GroupName is the name of the resources group.
