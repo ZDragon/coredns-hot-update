@@ -46,10 +46,10 @@ func init() {
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&FederationDNS{},
-		&FederationDNSList{},
-		&FederationDNSSlice{},
-		&FederationDNSSliceList{},
+		&HostEntry{},
+		&HostEntriesList{},
+		&HostEntriesSlice{},
+		&HostEntriesSliceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
