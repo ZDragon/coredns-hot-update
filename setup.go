@@ -12,6 +12,7 @@ import (
 	"github.com/coredns/coredns/plugin"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog"
 	"net/http"
@@ -43,9 +44,9 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	config, err := clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err.Error())
+		klog.Fatalf("Error connect to cluster %s", err.Error())
 	}
 	// use the current context in kubeconfig
 	// use for local dev
