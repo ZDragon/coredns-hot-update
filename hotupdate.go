@@ -86,7 +86,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 	log.Infof("Call ReCalculateDB")
 	re.mux.Lock()
 
-	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
+	//re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 
 	list, err := singleDNS.HostEntries(FederationNs).List(labels.Everything())
 	if err != nil {
@@ -164,18 +164,23 @@ func (re *HotUpdate) Add(ctx context.Context, name string, host string, rr []str
 	} else {
 		//log.Infof("Zone %v found, try add qname %v", zone, qname)
 		z := re.file.Zones.Z["."]
-		for _, v := range rr {
-			rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
-			if err != nil {
-				return err
+		_, result := z.Search(qname)
+		if result {
+			log.Infof("QNAME %v found, duplicate host entry incorrect by default ", qname)
+		} else {
+			for _, v := range rr {
+				rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
+				if err != nil {
+					return err
+				}
+				rr.Header().Name = strings.ToLower(rr.Header().Name)
+				if err := z.Insert(rr); err != nil {
+					return err
+				}
+				//log.Infof("Log rr: %v", rr)
 			}
-			rr.Header().Name = strings.ToLower(rr.Header().Name)
-			if err := z.Insert(rr); err != nil {
-				return err
-			}
-			//log.Infof("Log rr: %v", rr)
+			re.file.Zones.Z["."] = z
 		}
-		re.file.Zones.Z["."] = z
 	}
 	/*
 		for s2, z := range re.file.Zones.Z {
