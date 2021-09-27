@@ -166,7 +166,7 @@ func (re *HotUpdate) Add(ctx context.Context, name string, host string, rr []str
 		z := re.file.Zones.Z["."]
 		_, result := z.Search(qname)
 		if result {
-			log.Infof("QNAME %v found, duplicate host entry incorrect by default ", qname)
+			log.Infof("QNAME %v found, duplicate host entry incorrect by default", qname)
 		} else {
 			for _, v := range rr {
 				rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
