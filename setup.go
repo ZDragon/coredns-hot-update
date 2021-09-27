@@ -44,17 +44,9 @@ func setup(c *caddy.Controller) error {
 		return re
 	})
 
-	config, err := rest.InClusterConfig()
+	config, err := getConfig()
 	if err != nil {
 		klog.Fatalf("Error connect to cluster %s", err.Error())
-	}
-	// use the current context in kubeconfig
-	// use for local dev
-	if IsDev {
-		config, err = clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
-		if err != nil {
-			panic(err.Error())
-		}
 	}
 
 	exampleClient, err := clientset.NewForConfig(config)
@@ -66,6 +58,14 @@ func setup(c *caddy.Controller) error {
 
 	// All OK, return a nil error. very useful comment
 	return nil
+}
+
+func getConfig() (*rest.Config, error) {
+	if IsDev {
+		return clientcmd.BuildConfigFromFlags("", "/Users/u17908803/.kube/config")
+	} else {
+		return rest.InClusterConfig()
+	}
 }
 
 func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
