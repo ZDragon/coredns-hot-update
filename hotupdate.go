@@ -9,10 +9,11 @@ import (
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
-	"github.com/coredns/coredns/request"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
+	"sync"
+	"time"
 
 	//"github.com/coredns/coredns/plugin/metrics"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
@@ -27,27 +28,20 @@ const (
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
 // friends to log.
 var log = clog.NewWithPlugin("hotupdate")
+var mu sync.Mutex
 
 // HotUpdate Example is an example plugin to show how to write a plugin.
 type HotUpdate struct {
 	Next plugin.Handler
 	file file.File
+	mux  sync.Mutex
 }
 
 // ServeDNS implements the plugin.Handler interface. This method gets called when example is used
 // in a Server.
 func (re *HotUpdate) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
-	state := request.Request{W: w, Req: r}
-	qname := state.Name()
-	log.Infof("ServeDNS query %v", qname)
-
-	for s2, z := range re.file.Zones.Z {
-		log.Infof("Zone %v", s2)
-		for _, i2 := range z.All() {
-			log.Infof("RR records %v", i2.All())
-		}
-	}
-
+	re.mux.Lock()
+	defer re.mux.Unlock()
 	return re.file.ServeDNS(ctx, w, r)
 }
 
@@ -88,7 +82,9 @@ func (re *HotUpdate) CheckInDB(client listers.HostEntryLister, sliceDNS listers.
 
 func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 	singleDNS listers.HostEntryLister, sliceDNS listers.HostEntriesSliceLister, forceMode bool) {
+	start := time.Now()
 	log.Infof("Call ReCalculateDB")
+	re.mux.Lock()
 
 	re.file = file.File{Zones: file.Zones{Z: make(map[string]*file.Zone), Names: []string{}}}
 
@@ -137,6 +133,8 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 			}
 		}
 	}
+	re.mux.Unlock()
+	log.Infof("END ReCalculateDB. Time %s", time.Since(start))
 }
 
 func (re *HotUpdate) Add(ctx context.Context, name string, host string, rr []string) error {
