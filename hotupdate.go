@@ -169,23 +169,26 @@ func (re *HotUpdate) Add(ctx context.Context, name string, host string, rr []str
 	} else {
 		//log.Infof("Zone %v found, try add qname %v", zone, qname)
 		z := re.file.Zones.Z["."]
-		_, result := z.Search(qname)
+		elem, result := z.Search(qname)
 		if result {
 			log.Infof("QNAME %v found, duplicate host entry incorrect by default", qname)
-		} else {
-			for _, v := range rr {
-				rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
-				if err != nil {
-					return err
-				}
-				rr.Header().Name = strings.ToLower(rr.Header().Name)
-				if err := z.Insert(rr); err != nil {
-					return err
-				}
-				//log.Infof("Log rr: %v", rr)
+			for _, rr := range elem.All() {
+				z.Delete(rr)
 			}
-			re.file.Zones.Z["."] = z
 		}
+
+		for _, v := range rr {
+			rr, err := dns.NewRR("$ORIGIN " + qname + "\n" + v + "\n")
+			if err != nil {
+				return err
+			}
+			rr.Header().Name = strings.ToLower(rr.Header().Name)
+			if err := z.Insert(rr); err != nil {
+				return err
+			}
+			//log.Infof("Log rr: %v", rr)
+		}
+		re.file.Zones.Z["."] = z
 	}
 	/*
 		for s2, z := range re.file.Zones.Z {
