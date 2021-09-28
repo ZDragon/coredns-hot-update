@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const IsDev = false
+const IsDev = true
 
 // init registers this plugin.
 func init() { plugin.Register("hotupdate", setup) }
