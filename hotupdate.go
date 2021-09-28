@@ -5,6 +5,7 @@ package hotupdate
 
 import (
 	"context"
+	"github.com/ZDragon/coredns-hot-update/pkg/apis/federation/v1alpha1"
 	versioned "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
 	"github.com/coredns/coredns/plugin"
@@ -24,6 +25,7 @@ const (
 	FederationNs     = "supermesh"
 	StatusProcessed  = "Processed"
 	StatusNotStarted = "NotStarted"
+	StatusError      = "Error"
 )
 
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
@@ -95,16 +97,10 @@ func (re *HotUpdate) LoadAllEntries(cl versioned.Interface) {
 		err := re.Add(context.TODO(), v.Name, v.Spec.Host, v.Spec.RR)
 		if err != nil {
 			log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+			re.SetEntryStatus(cl, &v, StatusError)
 			return
 		}
-		vCopy := v.DeepCopy()
-		vCopy.Status.Process = StatusProcessed
-		vCopy.Status.LastUpdate = v1.NewTime(time.Now())
-		status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
-		if err != nil {
-			log.Errorf("Call ReCalculateDB Add RR Error %s", status)
-			return
-		}
+		re.SetEntryStatus(cl, &v, StatusProcessed)
 	}
 
 	listSlices, errSlice := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).List(context.TODO(), v1.ListOptions{})
@@ -118,17 +114,11 @@ func (re *HotUpdate) LoadAllEntries(cl versioned.Interface) {
 			err := re.Add(context.TODO(), v.Name, ii.Host, ii.RR)
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+				re.SetSliceStatus(cl, &v, StatusError)
 				return
 			}
 		}
-		vCopy := v.DeepCopy()
-		vCopy.Status.Process = StatusProcessed
-		vCopy.Status.LastUpdate = v1.NewTime(time.Now())
-		status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
-		if err != nil {
-			log.Errorf("Call ReCalculateDB Add RR Error %s", status)
-			return
-		}
+		re.SetSliceStatus(cl, &v, StatusProcessed)
 	}
 
 	re.mux.Unlock()
@@ -154,16 +144,10 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 			err := re.Add(context.TODO(), v.Name, v.Spec.Host, v.Spec.RR)
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+				re.SetEntryStatus(cl, v, StatusError)
 				return
 			}
-			vCopy := v.DeepCopy()
-			vCopy.Status.Process = StatusProcessed
-			vCopy.Status.LastUpdate = v1.NewTime(time.Now())
-			status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
-			if err != nil {
-				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
-				return
-			}
+			re.SetEntryStatus(cl, v, StatusProcessed)
 		}
 	}
 
@@ -179,21 +163,37 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 				err := re.Add(context.TODO(), v.Name, ii.Host, ii.RR)
 				if err != nil {
 					log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+					re.SetSliceStatus(cl, v, StatusError)
 					return
 				}
 			}
-			vCopy := v.DeepCopy()
-			vCopy.Status.Process = StatusProcessed
-			vCopy.Status.LastUpdate = v1.NewTime(time.Now())
-			status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
-			if err != nil {
-				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
-				return
-			}
+			re.SetSliceStatus(cl, v, StatusProcessed)
 		}
 	}
 	re.mux.Unlock()
 	log.Infof("END ReCalculateDB. Time %s", time.Since(start))
+}
+
+func (re *HotUpdate) SetEntryStatus(cl versioned.Interface, v *v1alpha1.HostEntry, newStatus string) {
+	vCopy := v.DeepCopy()
+	vCopy.Status.Process = newStatus
+	vCopy.Status.LastUpdate = v1.NewTime(time.Now())
+	status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
+	if err != nil {
+		log.Errorf("Call ReCalculateDB Add RR Error %s", status)
+		return
+	}
+}
+
+func (re *HotUpdate) SetSliceStatus(cl versioned.Interface, v *v1alpha1.HostEntriesSlice, newStatus string) {
+	vCopy := v.DeepCopy()
+	vCopy.Status.Process = newStatus
+	vCopy.Status.LastUpdate = v1.NewTime(time.Now())
+	status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
+	if err != nil {
+		log.Errorf("Call ReCalculateDB Add RR Error %s", status)
+		return
+	}
 }
 
 func (re *HotUpdate) Add(ctx context.Context, name string, host string, rr []string) error {
