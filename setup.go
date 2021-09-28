@@ -54,6 +54,7 @@ func setup(c *caddy.Controller) error {
 		klog.Fatalf("Error building example clientset: %s", err.Error())
 	}
 
+	re.LoadAllEntries(exampleClient)
 	go startKubeAPI(re, exampleClient)
 
 	// All OK, return a nil error. very useful comment
@@ -81,7 +82,6 @@ func startKubeAPI(re *HotUpdate, exampleClient *clientset.Clientset) {
 		exampleInformerFactory.Federation().V1alpha1().HostEntriesSlices(),
 		re)
 
-	re.ReCalculateDB(exampleClient, controller.singleDNSLister, controller.sliceDNSLister, true)
 	go startRestAPI(re, controller.singleDNSLister, controller.sliceDNSLister)
 
 	// notice that there is no need to run Start methods in a separate goroutine. (i.e. go kubeInformerFactory.Start(stopCh)

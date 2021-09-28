@@ -81,6 +81,60 @@ func (re *HotUpdate) CheckInDB(client listers.HostEntryLister, sliceDNS listers.
 	return false
 }
 
+func (re *HotUpdate) LoadAllEntries(cl versioned.Interface) {
+	start := time.Now()
+	log.Infof("Call ReCalculateDB")
+	re.mux.Lock()
+	list, err := cl.FederationV1alpha1().HostEntries(FederationNs).List(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		log.Errorf("ERROR ReCalculateDB. Read entries. Message %s", err.Error())
+		return
+	}
+
+	for _, v := range list.Items {
+		err := re.Add(context.TODO(), v.Name, v.Spec.Host, v.Spec.RR)
+		if err != nil {
+			log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+			return
+		}
+		vCopy := v.DeepCopy()
+		vCopy.Status.Process = StatusProcessed
+		vCopy.Status.LastUpdate = v1.NewTime(time.Now())
+		status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
+		if err != nil {
+			log.Errorf("Call ReCalculateDB Add RR Error %s", status)
+			return
+		}
+	}
+
+	listSlices, errSlice := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).List(context.TODO(), v1.ListOptions{})
+	if errSlice != nil {
+		log.Errorf("ERROR ReCalculateDB. Read slice. Message %s", errSlice.Error())
+		return
+	}
+
+	for _, v := range listSlices.Items {
+		for _, ii := range v.Spec.Items {
+			err := re.Add(context.TODO(), v.Name, ii.Host, ii.RR)
+			if err != nil {
+				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
+				return
+			}
+		}
+		vCopy := v.DeepCopy()
+		vCopy.Status.Process = StatusProcessed
+		vCopy.Status.LastUpdate = v1.NewTime(time.Now())
+		status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
+		if err != nil {
+			log.Errorf("Call ReCalculateDB Add RR Error %s", status)
+			return
+		}
+	}
+
+	re.mux.Unlock()
+	log.Infof("END ReCalculateDB. Time %s", time.Since(start))
+}
+
 func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 	singleDNS listers.HostEntryLister, sliceDNS listers.HostEntriesSliceLister, forceMode bool) {
 	start := time.Now()
