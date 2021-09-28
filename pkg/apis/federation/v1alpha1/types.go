@@ -16,7 +16,8 @@ type HostEntry struct {
 }
 
 type HostEntryStatus struct {
-	Process string
+	Process    string      `json:"process"`
+	LastUpdate metav1.Time `json:"lastUpdate"`
 }
 
 type HostEntrySpec struct {

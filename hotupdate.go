@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	FederationNs    = "supermesh"
-	StatusProcessed = "Processed"
+	FederationNs     = "supermesh"
+	StatusProcessed  = "Processed"
+	StatusNotStarted = "NotStarted"
 )
 
 // Define log to be a logger with the plugin name in it. This way we can just use log.Info and
@@ -103,6 +104,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 			}
 			vCopy := v.DeepCopy()
 			vCopy.Status.Process = StatusProcessed
+			vCopy.Status.LastUpdate = v1.NewTime(time.Now())
 			status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
@@ -128,6 +130,7 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 			}
 			vCopy := v.DeepCopy()
 			vCopy.Status.Process = StatusProcessed
+			vCopy.Status.LastUpdate = v1.NewTime(time.Now())
 			status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)

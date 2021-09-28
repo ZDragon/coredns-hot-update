@@ -6,6 +6,7 @@ import (
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/federation/v1alpha1"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -65,7 +66,9 @@ func NewController(sampleclientset clientset.Interface,
 				// Two different versions of the same Deployment will always have different RVs.
 				return
 			}
-			controller.enqueueFoo(new)
+			newDepl.Status.Process = StatusNotStarted
+			newDepl.Status.LastUpdate = metav1.NewTime(time.Now())
+			controller.enqueueFoo(newDepl)
 		},
 		DeleteFunc: controller.enqueueFoo,
 	})
@@ -80,7 +83,9 @@ func NewController(sampleclientset clientset.Interface,
 				// Two different versions of the same Deployment will always have different RVs.
 				return
 			}
-			controller.enqueueFoo(new)
+			newDepl.Status.Process = StatusNotStarted
+			newDepl.Status.LastUpdate = metav1.NewTime(time.Now())
+			controller.enqueueFoo(newDepl)
 		},
 		DeleteFunc: controller.enqueueFoo,
 	})
