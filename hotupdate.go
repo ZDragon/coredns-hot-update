@@ -101,8 +101,9 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 				log.Errorf("Call ReCalculateDB Add RR Error %s", err)
 				return
 			}
-			v.Status.Process = StatusProcessed
-			status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
+			vCopy := v.DeepCopy()
+			vCopy.Status.Process = StatusProcessed
+			status, err := cl.FederationV1alpha1().HostEntries(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
 				return
@@ -125,8 +126,9 @@ func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
 					return
 				}
 			}
-			v.Status.Process = StatusProcessed
-			status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), v, v1.UpdateOptions{})
+			vCopy := v.DeepCopy()
+			vCopy.Status.Process = StatusProcessed
+			status, err := cl.FederationV1alpha1().HostEntriesSlices(FederationNs).UpdateStatus(context.TODO(), vCopy, v1.UpdateOptions{})
 			if err != nil {
 				log.Errorf("Call ReCalculateDB Add RR Error %s", status)
 				return

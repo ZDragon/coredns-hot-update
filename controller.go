@@ -2,6 +2,7 @@ package hotupdate
 
 import (
 	"fmt"
+	"github.com/ZDragon/coredns-hot-update/pkg/apis/federation/v1alpha1"
 	clientset "github.com/ZDragon/coredns-hot-update/pkg/generated/clientset/versioned"
 	informers "github.com/ZDragon/coredns-hot-update/pkg/generated/informers/externalversions/federation/v1alpha1"
 	listers "github.com/ZDragon/coredns-hot-update/pkg/generated/listers/federation/v1alpha1"
@@ -57,6 +58,13 @@ func NewController(sampleclientset clientset.Interface,
 	singleHostDNSInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueFoo,
 		UpdateFunc: func(old, new interface{}) {
+			newDepl := new.(*v1alpha1.HostEntry)
+			oldDepl := old.(*v1alpha1.HostEntry)
+			if newDepl.ResourceVersion == oldDepl.ResourceVersion {
+				// Periodic resync will send update events for all known Deployments.
+				// Two different versions of the same Deployment will always have different RVs.
+				return
+			}
 			controller.enqueueFoo(new)
 		},
 		DeleteFunc: controller.enqueueFoo,
@@ -65,6 +73,13 @@ func NewController(sampleclientset clientset.Interface,
 	slicesDNSInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueFoo,
 		UpdateFunc: func(old, new interface{}) {
+			newDepl := new.(*v1alpha1.HostEntriesSlice)
+			oldDepl := old.(*v1alpha1.HostEntriesSlice)
+			if newDepl.ResourceVersion == oldDepl.ResourceVersion {
+				// Periodic resync will send update events for all known Deployments.
+				// Two different versions of the same Deployment will always have different RVs.
+				return
+			}
 			controller.enqueueFoo(new)
 		},
 		DeleteFunc: controller.enqueueFoo,
