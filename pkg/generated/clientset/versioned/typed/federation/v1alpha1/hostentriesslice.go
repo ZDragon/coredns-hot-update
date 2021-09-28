@@ -68,7 +68,7 @@ func (c *hostEntriesSlices) Get(ctx context.Context, name string, options v1.Get
 	result = &v1alpha1.HostEntriesSlice{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do(ctx).
@@ -85,7 +85,7 @@ func (c *hostEntriesSlices) List(ctx context.Context, opts v1.ListOptions) (resu
 	result = &v1alpha1.HostEntriesSliceList{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Do(ctx).
@@ -102,7 +102,7 @@ func (c *hostEntriesSlices) Watch(ctx context.Context, opts v1.ListOptions) (wat
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Watch(ctx)
@@ -113,7 +113,7 @@ func (c *hostEntriesSlices) Create(ctx context.Context, hostEntriesSlice *v1alph
 	result = &v1alpha1.HostEntriesSlice{}
 	err = c.client.Post().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(hostEntriesSlice).
 		Do(ctx).
@@ -126,7 +126,7 @@ func (c *hostEntriesSlices) Update(ctx context.Context, hostEntriesSlice *v1alph
 	result = &v1alpha1.HostEntriesSlice{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		Name(hostEntriesSlice.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(hostEntriesSlice).
@@ -141,7 +141,7 @@ func (c *hostEntriesSlices) UpdateStatus(ctx context.Context, hostEntriesSlice *
 	result = &v1alpha1.HostEntriesSlice{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		Name(hostEntriesSlice.Name).
 		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -155,7 +155,7 @@ func (c *hostEntriesSlices) UpdateStatus(ctx context.Context, hostEntriesSlice *
 func (c *hostEntriesSlices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		Name(name).
 		Body(&opts).
 		Do(ctx).
@@ -170,7 +170,7 @@ func (c *hostEntriesSlices) DeleteCollection(ctx context.Context, opts v1.Delete
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(&opts).
@@ -183,7 +183,7 @@ func (c *hostEntriesSlices) Patch(ctx context.Context, name string, pt types.Pat
 	result = &v1alpha1.HostEntriesSlice{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
-		Resource("hostentriesslices").
+		Resource("hostentriesslice").
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
