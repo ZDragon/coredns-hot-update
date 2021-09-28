@@ -83,7 +83,7 @@ func (re *HotUpdate) CheckInDB(client listers.HostEntryLister, sliceDNS listers.
 
 func (re *HotUpdate) LoadAllEntries(cl versioned.Interface) {
 	start := time.Now()
-	log.Infof("Call ReCalculateDB")
+	log.Infof("Call LoadAllEntries")
 	re.mux.Lock()
 	list, err := cl.FederationV1alpha1().HostEntries(FederationNs).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
@@ -132,7 +132,7 @@ func (re *HotUpdate) LoadAllEntries(cl versioned.Interface) {
 	}
 
 	re.mux.Unlock()
-	log.Infof("END ReCalculateDB. Time %s", time.Since(start))
+	log.Infof("END LoadAllEntries. Time %s", time.Since(start))
 }
 
 func (re *HotUpdate) ReCalculateDB(cl versioned.Interface,
